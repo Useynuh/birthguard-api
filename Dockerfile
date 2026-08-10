@@ -1,6 +1,9 @@
 FROM php:8.2-apache
 
+# ------------------------------------------------------------
 # Install system dependencies and PHP extensions
+# ------------------------------------------------------------
+
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -12,7 +15,9 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libicu-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-configure gd \
+        --with-freetype \
+        --with-jpeg \
     && docker-php-ext-install \
         pdo \
         pdo_mysql \
@@ -27,38 +32,62 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# ------------------------------------------------------------
 # Enable Apache rewrite module
+# ------------------------------------------------------------
+
 RUN a2enmod rewrite
 
-# Set Apache document root to Laravel's public directory
+# ------------------------------------------------------------
+# Set Laravel public directory as Apache document root
+# ------------------------------------------------------------
+
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN sed -ri \
-    -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
+    -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" \
     /etc/apache2/sites-available/*.conf \
     /etc/apache2/apache2.conf \
     /etc/apache2/conf-available/*.conf
 
+# ------------------------------------------------------------
 # Install Composer
+# ------------------------------------------------------------
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Set working directory
+# ------------------------------------------------------------
+# Application directory
+# ------------------------------------------------------------
+
 WORKDIR /var/www/html
 
-# Copy composer files first for better Docker caching
+# ------------------------------------------------------------
+# Copy Composer files first
+# ------------------------------------------------------------
+
 COPY composer.json composer.lock ./
 
-# Install production PHP dependencies
+# ------------------------------------------------------------
+# Install production dependencies
+# ------------------------------------------------------------
+
 RUN composer install \
     --no-dev \
-    --optimize-autoloader \
     --no-interaction \
-    --prefer-dist
+    --prefer-dist \
+    --optimize-autoloader
 
+# ------------------------------------------------------------
 # Copy Laravel application
+# ------------------------------------------------------------
+
 COPY . .
 
-# Create Laravel storage directories
+# ------------------------------------------------------------
+# Create required Laravel directories
+# ------------------------------------------------------------
+
 RUN mkdir -p \
     storage/framework/cache \
     storage/framework/sessions \
@@ -66,7 +95,10 @@ RUN mkdir -p \
     storage/logs \
     bootstrap/cache
 
+# ------------------------------------------------------------
 # Set permissions
+# ------------------------------------------------------------
+
 RUN chown -R www-data:www-data \
     storage \
     bootstrap/cache
@@ -75,8 +107,14 @@ RUN chmod -R 775 \
     storage \
     bootstrap/cache
 
-# Expose Apache port
+# ------------------------------------------------------------
+# Expose Apache HTTP port
+# ------------------------------------------------------------
+
 EXPOSE 80
 
-# Start Apache
-CMD ["apache2-foreground"]
+# ------------------------------------------------------------
+# Run migrations, then start Apache
+# ------------------------------------------------------------
+
+CMD ["sh", "-c", "php artisan migrate --force && apache2-foreground"]
