@@ -6,6 +6,28 @@ use App\Http\Controllers\Api\ChildController;
 use App\Http\Controllers\Api\VaccinationController;
 use App\Http\Controllers\Api\HealthWorkerDashboardController;
 
+
+/*
+|--------------------------------------------------------------------------
+| API Health Check
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/health', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'BirthGuard Laravel API is running.',
+        'service' => 'birthguard-api',
+    ]);
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| API Version 1
+|--------------------------------------------------------------------------
+*/
+
 Route::prefix('v1')->group(function () {
 
     /*
@@ -31,16 +53,26 @@ Route::prefix('v1')->group(function () {
         | Authentication
         |--------------------------------------------------------------------------
         */
-Route::get(
-    '/health-worker/upcoming-vaccinations',
-    [VaccinationController::class, 'healthWorkerUpcoming']
-);
-Route::get(
-    '/health-worker/dashboard',
-    [HealthWorkerDashboardController::class, 'index']
-);
+
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Health Worker Dashboard
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/health-worker/dashboard',
+            [HealthWorkerDashboardController::class, 'index']
+        );
+
+        Route::get(
+            '/health-worker/upcoming-vaccinations',
+            [VaccinationController::class, 'healthWorkerUpcoming']
+        );
 
 
         /*
