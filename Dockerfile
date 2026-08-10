@@ -33,13 +33,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ------------------------------------------------------------
-# Enable Apache rewrite module
+# Enable Apache rewrite
 # ------------------------------------------------------------
 
 RUN a2enmod rewrite
 
 # ------------------------------------------------------------
-# Set Laravel public directory as Apache document root
+# Laravel public directory
 # ------------------------------------------------------------
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
@@ -63,13 +63,18 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 # ------------------------------------------------------------
-# Copy Composer files first
+# Copy the complete Laravel application
 # ------------------------------------------------------------
 
-COPY composer.json composer.lock ./
+COPY . .
 
 # ------------------------------------------------------------
-# Install production dependencies
+# Install production Composer dependencies
+#
+# --no-dev    = don't install development packages
+# --no-interaction = don't ask questions
+# --prefer-dist = use distribution packages
+# --optimize-autoloader = optimize Laravel autoloading
 # ------------------------------------------------------------
 
 RUN composer install \
@@ -79,13 +84,7 @@ RUN composer install \
     --optimize-autoloader
 
 # ------------------------------------------------------------
-# Copy Laravel application
-# ------------------------------------------------------------
-
-COPY . .
-
-# ------------------------------------------------------------
-# Create required Laravel directories
+# Create Laravel storage directories
 # ------------------------------------------------------------
 
 RUN mkdir -p \
@@ -96,7 +95,7 @@ RUN mkdir -p \
     bootstrap/cache
 
 # ------------------------------------------------------------
-# Set permissions
+# Set Laravel permissions
 # ------------------------------------------------------------
 
 RUN chown -R www-data:www-data \
@@ -108,13 +107,13 @@ RUN chmod -R 775 \
     bootstrap/cache
 
 # ------------------------------------------------------------
-# Expose Apache HTTP port
+# Expose Apache
 # ------------------------------------------------------------
 
 EXPOSE 80
 
 # ------------------------------------------------------------
-# Run migrations, then start Apache
+# Run database migrations and start Apache
 # ------------------------------------------------------------
 
 CMD ["sh", "-c", "php artisan migrate --force && apache2-foreground"]
