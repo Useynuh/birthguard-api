@@ -76,6 +76,9 @@ RUN chmod -R 775 \
     storage \
     bootstrap/cache
 
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Run Laravel Composer scripts now that artisan exists
 RUN composer dump-autoload --optimize
 
@@ -83,4 +86,4 @@ RUN composer dump-autoload --optimize
 EXPOSE 80
 
 # Start Apache
-CMD ["apache2-foreground"]
+ENTRYPOINT ["entrypoint.sh"]
